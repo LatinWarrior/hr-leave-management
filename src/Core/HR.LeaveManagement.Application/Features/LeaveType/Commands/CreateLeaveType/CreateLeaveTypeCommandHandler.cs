@@ -4,11 +4,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using HR.LeaveManagement.Application.Contracts.Persistence;
+using HR.LeaveManagement.Application.Exceptions;
 using MediatR;
 
 namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeaveType
 {
-    public class CreateLeaveTypeCommandHandler : IRequestHandler<CreateLeaveTypeCommand, Unit>
+    public class CreateLeaveTypeCommandHandler : IRequestHandler<CreateLeaveTypeCommand, int>
     {
         private readonly IMapper _mapper;
         private readonly ILeaveTypeRepository _repository;
@@ -18,9 +19,17 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
             _repository = repository;
             _mapper = mapper;
         }
-        public async Task<Unit> Handle(CreateLeaveTypeCommand request, CancellationToken cancellationToken)
+        public async Task<int> Handle(CreateLeaveTypeCommand request, CancellationToken cancellationToken)
         {
             // Validate incoming data.
+            var validator = new CreateLeaveTypeCommandValidator(_repository);
+            var validatorResult = await validator.ValidateAsync(request);
+
+            // if (!validatorResult.IsValid)
+            if (validatorResult.Errors.Any())
+            {
+                throw new BadRequestException("Invalid LeaveType", validatorResult);
+            }
 
             // Convert to domain entity object.
             var leaveTypeToCreate = _mapper.Map<Domain.LeaveType>(request);
@@ -29,7 +38,7 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
             await _repository.CreateAsync(leaveTypeToCreate);
 
             // Return record Id.
-            return Unit.Value;
+            return leaveTypeToCreate.Id;
         }
     }
 }
