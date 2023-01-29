@@ -29,7 +29,7 @@ namespace HR.LeaveManagement.Application.Features.LeaveType.Commands.CreateLeave
             await _repository.CreateAsync(leaveTypeToCreate);
 
             // Return record Id.
-            return Unit;
+            return Unit.Value;
         }
     }
 }
